@@ -1,23 +1,53 @@
 import MovieCard from "../components/MovieCard"
-import{useState} from "react"
+import EmptyState from "../components/EmptyState"
+import{useState, useEffect} from "react"
+import { getPopularMovies, searchMovies } from "../services/api";
 import "../css/Home.css"
 
 
 function Home() {
     const [searchQuery, setSearchQuery] = useState("");
+    const [movies,setMovies] = useState ([]);
+    const [error, setError] = useState (null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const loadPopularMovies = async () => {
+            try {
+                const popularMovies = await getPopularMovies()
+                setMovies(popularMovies)
+            } 
+            catch (err) {
+                console.log(err);
+                setError("Failed to load movies")
+            } 
+            finally {
+                setLoading(false);
+            }
+        }
+
+        loadPopularMovies()
+    }, []);
 
 
-    const movies = [
-        { id: 1, title: "Superman", release_date: "2025"},
-        { id: 2, title: "Demon Slayer: Infinity Castle", release_date: "2025"},
-        { id: 3, title: "Fantastic Four: First Steps", release_date: "2025"},
-        { id: 4, title: "K-Pop Demon Hunters", release_date: "2025"},
-    ];
-
-    const handleSearch = (e) => {
+    const handleSearch = async (e) => {
         e.preventDefault();
-        alert(searchQuery);
-        setSearchQuery("");
+        if (!searchQuery.trim()) return
+        if (loading) return
+
+        setLoading(true)
+
+        try {
+            const searchResults = await searchMovies(searchQuery.trim())
+            setMovies(Array.isArray(searchResults) ? searchResults : [])
+            setError(null)
+        } catch (err) {
+            console.log(err)
+            setError("Failed to search movies")
+            setMovies([]);
+        } finally {
+            setLoading(false);
+        }
     };
 
     return ( 
@@ -30,13 +60,31 @@ function Home() {
                     value = {searchQuery}
                     onChange ={(e) => setSearchQuery(e.target.value)}
                 />
+                <button type="submit" className = "search-button">Search</button>
             </form>
 
-        <div className = "movies-gird">
-            {movies.map((movie) => (
-                <MovieCard movie = {movie} key = {movie.id}/>
-                ))}
+            {error && <div className="error-message"></div>}
+
+                {loading ? (
+        <div className="loading">Loading…</div>
+        ) : error ? (
+        <div className="error-message">{error}</div>
+        ) : movies.length === 0 ? (
+        <EmptyState
+            title="No results found"
+            message={
+            searchQuery.trim()
+                ? `We could not find any matches for “${searchQuery.trim()}”. Try a different title.`
+                : "Try searching for a movie above."
+            }
+        />
+        ) : (
+        <div className="movies-grid">
+            {movies.map((m) => (
+            <MovieCard movie={m} key={m.id} />
+            ))}
         </div>
+        )}
     </div>
     );
 }
