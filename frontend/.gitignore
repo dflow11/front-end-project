@@ -33,8 +33,9 @@ Thumbs.db
 
 # Local env files
 .env
-.env.* 
+.env.local
 .env.*.local
+!.env.example
 
 # Cache
 .vite

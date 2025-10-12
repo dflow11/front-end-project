@@ -1,7 +1,10 @@
 import MovieCard from "../components/MovieCard"
+import MovieCardSkeleton from "../components/MovieCardSkeleton"
 import EmptyState from "../components/EmptyState"
-import{useState, useEffect} from "react"
+import ScrollToTop from "../components/ScrollToTop"
+import { useState, useEffect } from "react"
 import { getPopularMovies, searchMovies } from "../services/api";
+import { useLocation } from "react-router-dom";
 import "../css/Home.css"
 
 
@@ -11,23 +14,28 @@ function Home() {
     const [error, setError] = useState (null);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        const loadPopularMovies = async () => {
-            try {
-                const popularMovies = await getPopularMovies()
-                setMovies(popularMovies)
-            } 
-            catch (err) {
-                console.log(err);
-                setError("Failed to load movies")
-            } 
-            finally {
-                setLoading(false);
-            }
+    const loadPopularMovies = async () => {
+        try {
+            setLoading(true);
+            const popularMovies = await getPopularMovies();
+            setMovies(popularMovies);
+            setSearchQuery(""); // Reset search query
+            setError(null);
+        } 
+        catch (err) {
+            console.log(err);
+            setError("Failed to load movies");
+        } 
+        finally {
+            setLoading(false);
         }
+    };
 
-        loadPopularMovies()
-    }, []);
+    const location = useLocation();
+
+    useEffect(() => {
+        loadPopularMovies();
+    }, [location.state?.reload]); // Reload when navigation state changes
 
 
     const handleSearch = async (e) => {
